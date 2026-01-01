@@ -13,7 +13,7 @@ class BleService {
   BluetoothCharacteristic? configChar;
   BluetoothCharacteristic? renameChar;
 
-  /// ✅ FIXED: Request BLE permissions
+  /// Request required BLE permissions
   static Future<void> requestPermissions() async {
     await [
       Permission.bluetooth,
@@ -23,39 +23,64 @@ class BleService {
     ].request();
   }
 
+  /// Connect to BLE device and discover characteristics
   Future<void> connect(String deviceId) async {
     await requestPermissions();
-    
+
     device = BluetoothDevice.fromId(deviceId);
-    await device!.connect(timeout: Duration(seconds: 10));
-    
-    List<BluetoothService> services = await device!.discoverServices();
-    BluetoothService service = services.firstWhere(
-      (s) => s.uuid == Guid(BleService.SERVICE_UUID),  // ✅ FIXED
+
+    await device!.connect(
+      timeout: const Duration(seconds: 10),
+      autoConnect: false,
     );
 
-    statusChar = service.characteristics.firstWhere((c) => c.uuid == Guid(BleService.STATUS_UUID));  // ✅ FIXED
-    configChar = service.characteristics.firstWhere((c) => c.uuid == Guid(BleService.CONFIG_UUID));  // ✅ FIXED
-    renameChar = service.characteristics.firstWhere((c) => c.uuid == Guid(BleService.RENAME_UUID));  // ✅ FIXED
+    final services = await device!.discoverServices();
+
+    final service = services.firstWhere(
+      (s) => s.uuid == Guid(SERVICE_UUID),
+      orElse: () => throw Exception("Service not found"),
+    );
+
+    statusChar = service.characteristics.firstWhere(
+      (c) => c.uuid == Guid(STATUS_UUID),
+      orElse: () => throw Exception("Status characteristic not found"),
+    );
+
+    configChar = service.characteristics.firstWhere(
+      (c) => c.uuid == Guid(CONFIG_UUID),
+      orElse: () => throw Exception("Config characteristic not found"),
+    );
+
+    renameChar = service.characteristics.firstWhere(
+      (c) => c.uuid == Guid(RENAME_UUID),
+      orElse: () => throw Exception("Rename characteristic not found"),
+    );
 
     await statusChar!.setNotifyValue(true);
+
     statusChar!.lastValueStream.listen((value) {
       print('Status update: $value');
     });
   }
 
+  /// Rename tank
   Future<void> renameTank(String newName) async {
-    List<int> value = utf8.encode(newName);
-    await renameChar!.write(value);
+    if (renameChar == null) return;
+    final value = utf8.encode(newName);
+    await renameChar!.write(value, withoutResponse: false);
   }
 
-  Future<void> writeConfig(Map<String, dynamic> config) async {  // ✅ FIXED: Use Map instead
-    String jsonString = jsonEncode(config);
-    List<int> value = utf8.encode(jsonString);
-    await configChar!.write(value);
+  /// Write configuration JSON
+  Future<void> writeConfig(Map<String, dynamic> config) async {
+    if (configChar == null) return;
+    final jsonString = jsonEncode(config);
+    final value = utf8.encode(jsonString);
+    await configChar!.write(value, withoutResponse: false);
   }
 
+  /// Disconnect BLE device
   Future<void> disconnect() async {
     await device?.disconnect();
+    device = null;
   }
 }

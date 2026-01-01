@@ -4,6 +4,7 @@ import '../providers/tank_provider.dart';
 import '../widgets/glass_card.dart';
 import 'tank_dashboard.dart';
 import 'ble_scan_screen.dart';
+//import 'ble_debug_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -21,9 +22,18 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
         actions: [
+
+          //  IconButton(
+          //   icon: Icon(Icons.bug_report, color: Colors.orange),
+          //   onPressed: () => Navigator.push(
+          //     context, 
+          //     MaterialPageRoute(builder: (_) => BleDebugScreen())
+          //   ),
+          // ),
+
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.white70),
-            onPressed: () => Navigator.push(
+            onPressed: () => Navigator.push(  // ✅ FIXED 1: BLE Scan Screen
               context, 
               MaterialPageRoute(builder: (_) => BleScanScreen())
             ),
@@ -35,7 +45,7 @@ class HomeScreen extends StatelessWidget {
           // EMPTY STATE - First time user
           if (tankProvider.tanks.isEmpty) {
             return _EmptyState(
-              onAddTank: () => Navigator.push(
+              onAddTank: () => Navigator.push(  // ✅ FIXED 2: BLE Scan Screen
                 context, 
                 MaterialPageRoute(builder: (_) => BleScanScreen())
               ),
@@ -58,7 +68,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     subtitle: Text('Scan for nearby controllers'),
                     trailing: Icon(Icons.arrow_forward_ios, color: Colors.cyan),
-                    onTap: () => Navigator.push(
+                    onTap: () => Navigator.push(  // ✅ FIXED 3: BLE Scan Screen
                       context, 
                       MaterialPageRoute(builder: (_) => BleScanScreen())
                     ),
@@ -66,14 +76,45 @@ class HomeScreen extends StatelessWidget {
                 );
               }
               
-              // TANK CARD WITH LONG PRESS RENAME
+              // TANK CARD
               final tank = tankProvider.tanks[index];
               return GlassCard(
-                child: GestureDetector(
-                  // ✅ LONG PRESS = RENAME
-                  onLongPress: () => _showRenameDialog(context, tank, tankProvider),
-                  
-                  // ✅ TAP = Go to dashboard (if connected)
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(20),
+                  leading: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: tank.connected
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.red.withOpacity(0.3),
+                    child: Icon(
+                      tank.connected ? Icons.wifi : Icons.wifi_off,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    tank.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'pH: ${tank.liveData.ph?.toStringAsFixed(1) ?? '-'}',
+                        style: TextStyle(color: Colors.cyan),
+                      ),
+                      Text(
+                        '${tank.tankConfig.pumps.where((p) => p.enabled).length}/4 pumps',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                  trailing: tank.connected
+                      ? Icon(Icons.arrow_forward_ios, color: Colors.cyan, size: 20)
+                      : Icon(Icons.refresh, color: Colors.white70, size: 20),
                   onTap: tank.connected
                       ? () => Navigator.push(
                           context,
@@ -82,84 +123,11 @@ class HomeScreen extends StatelessWidget {
                           ),
                         )
                       : null,
-                  
-                  child: ListTile(
-                    contentPadding: EdgeInsets.all(20),
-                    leading: CircleAvatar(
-                      radius: 28,
-                      backgroundColor: tank.connected
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.red.withOpacity(0.3),
-                      child: Icon(
-                        tank.connected ? Icons.wifi : Icons.wifi_off,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      tank.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'pH: ${tank.liveData.ph?.toStringAsFixed(1) ?? '-'}',
-                          style: TextStyle(color: Colors.cyan),
-                        ),
-                        Text(
-                          '${tank.tankConfig.pumps.where((p) => p.enabled).length}/4 pumps',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                    trailing: tank.connected
-                        ? Icon(Icons.arrow_forward_ios, color: Colors.cyan, size: 20)
-                        : Icon(Icons.refresh, color: Colors.white70, size: 20),
-                  ),
                 ),
               );
             },
           );
         },
-      ),
-    );
-  }
-
-  /// ✅ RENAME DIALOG (NEW!)
-  void _showRenameDialog(BuildContext context, dynamic tank, TankProvider tankProvider) {
-    final controller = TextEditingController(text: tank.name);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Rename Tank'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'New tank name',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                tankProvider.renameTank(tank, controller.text.trim(), context);
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -214,7 +182,7 @@ class _EmptyState extends StatelessWidget {
               width: double.infinity,
               height: 64,
               child: ElevatedButton(
-                onPressed: onAddTank,
+                onPressed: onAddTank,  // ✅ FIXED 4: Uses parent Navigator.push
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.cyan,
                   foregroundColor: Colors.black87,
