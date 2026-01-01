@@ -9,7 +9,7 @@ import 'data_screen.dart';
 
 class TankDashboard extends StatelessWidget {
   final Tank tank;
-  
+
   const TankDashboard({Key? key, required this.tank}) : super(key: key);
 
   @override
@@ -22,18 +22,23 @@ class TankDashboard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: tank.connected 
+                  backgroundColor: tank.connected
                       ? Colors.green.withOpacity(0.4)
                       : Colors.orange.withOpacity(0.4),
-                  child: Icon(tank.connected ? Icons.circle : Icons.circle_outlined),
+                  child: Icon(
+                    tank.connected ? Icons.circle : Icons.circle_outlined,
+                  ),
                 ),
                 SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tank.name, style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(
-                      'Status: ${tank.connected ? "Online" : "Offline"}',  // ✅ FIXED: Simple status
+                      tank.name,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Status: ${tank.connected ? "Online" : "Offline"}',
                       style: TextStyle(fontSize: 14, color: Colors.cyan),
                     ),
                   ],
@@ -41,26 +46,29 @@ class TankDashboard extends StatelessWidget {
               ],
             ),
             actions: [
+              // ✅ Refresh moved to top-right (only when connected)
+              if (tank.connected)
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => provider.refreshTank(tank),
+                  tooltip: 'Refresh',
+                ),
+
+              // ✅ Settings stays top-right
               IconButton(
                 icon: Icon(Icons.settings),
-                onPressed: () => _showSettings(context),  // ✅ FIXED: Defined below
+                onPressed: () => _showSettings(context),
               ),
             ],
           ),
-          body: _buildBody(context),  // ✅ FIXED: SwipeController replacement
-          floatingActionButton: tank.connected 
-              ? FloatingActionButton(
-                  onPressed: () => provider.refreshTank(tank),  // ✅ Method exists
-                  child: Icon(Icons.refresh),
-                  backgroundColor: Colors.cyan,
-                )
-              : null,
+          body: _buildBody(context),
+          // ✅ FAB removed
+          floatingActionButton: null,
         );
       },
     );
   }
 
-  /// ✅ FIXED: SwipeController → TabBarView replacement
   Widget _buildBody(BuildContext context) {
     return DefaultTabController(
       length: 4,
@@ -92,7 +100,6 @@ class TankDashboard extends StatelessWidget {
     );
   }
 
-  /// ✅ FIXED: Settings dialog
   void _showSettings(BuildContext context) {
     showDialog(
       context: context,
