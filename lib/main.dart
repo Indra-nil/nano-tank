@@ -1,38 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'providers/tank_provider.dart';
-import 'providers/notifications_provider.dart';
-import 'screens/home_screen.dart';
+import 'home_page.dart';
+import 'ble_manager.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  await Hive.openBox('tanks');
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => TankProvider()),
-      ChangeNotifierProvider(create: (_) => NotificationsProvider()),
-    ],
-    child: NanoTankApp(),
-  ));
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => BleManager(),
+      child: const MyApp(),
+    ),
+  );
 }
 
-class NanoTankApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nano Tank Controller',
+      title: 'Aquarium LED Control',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Color(0xFF4FC3F7),
+          seedColor: Colors.blue,
+          brightness: Brightness.light,
+        ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+        ),
+      ),
+      // Dark Theme (add this)
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: Color(0xFF0A0E17),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+        ),
       ),
-      home: HomeScreen(),
-      debugShowCheckedModeBanner: false,
+      // This line makes it follow system theme
+      themeMode: ThemeMode.system,
+      home: const HomePage(),
     );
   }
 }
